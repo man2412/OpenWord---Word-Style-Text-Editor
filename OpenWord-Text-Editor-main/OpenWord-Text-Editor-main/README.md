@@ -18,13 +18,12 @@ A frontend-only Microsoft Word-style editor built with React and Tailwind CSS.
 - **Manual Page Breaks** – Insert a new page at the current cursor position with `Ctrl/Cmd + Enter` or the **Page Break** button
 - **Shared Header & Footer** – Edit header and footer once and it appears on all pages
 - **Page Numbers** – Auto-incremented page numbers on each page
-- **Delete Pages** – Remove unwanted pages (always keeps at least one page)
 
 ### Advanced Features
 - **Floating Toolbar** – Quick access to Bold, Italic, Underline when text is selected
 - **Cut, Copy, Paste** – Standard text operations with browser support
 - **Auto-save** – Document automatically saves to localStorage every second
-- **Export to JSON** – Download the document as a JSON file (backend-ready structure)
+
 - **Reset Document** – One-click button to clear all content, headers, and footers and start fresh
 - **Keyboard Shortcuts** – Quick access to common formatting and pagination actions
 
@@ -49,13 +48,7 @@ npm install
 # Run development server
 npm run dev
 
-# Build for production
-npm run build
-
-# Preview production build
-npm run preview
-```
-
+#
 ## Technology Stack
 
 - **React 18** - UI framework
@@ -108,3 +101,48 @@ All features are implemented and tested. The codebase demonstrates:
 - ✅ Performance optimization (debouncing, conditional rendering)
 - ✅ Data persistence (localStorage with backend-ready JSON format)
 
+### 8. Architectural Choices & Rationale
+
+- **Single main component (`OpenWord`)**
+  - Keeps everything in one place for a small codebase.
+  - Easy to reason about flow from top to bottom.
+  - Trade‑off: `App.jsx` is large (~1200 lines) and could be split into smaller components (Toolbar, Page, HeaderFooterEditor, etc.) for long‑term maintainability.
+
+- **Use of `contentEditable` + `document.execCommand`**
+  - **Pros**:
+    - Fast way to get a full rich‑text editor.
+    - Browser handles caret movement, selection, and many edge cases.
+    - Less code than building a full editor from scratch.
+  - **Cons**:
+    - `execCommand` is officially deprecated (but widely supported).
+    - Generated HTML can be messy and vary across browsers.
+    - Harder to enforce a strict, structured document model.
+
+- **DOM‑driven editing with periodic React sync**
+  - The DOM’s `innerHTML` is treated as the source of truth during typing.
+  - React state (`pages`) is periodically updated from the DOM.
+  - **Pros**:
+    - Better performance for a word processor (avoids state updates on each keystroke).
+  - **Cons**:
+    - Two sources of truth to keep in sync (DOM and React state).
+    - Requires careful DOM traversal and sync logic (`splitOverflow`, `updatePages`).
+
+- **Auto‑pagination by measuring height**
+  - Uses `PAGE_WIDTH`, `PAGE_HEIGHT`, and `CONTENT_MAX_HEIGHT` to simulate A4 pages at 96 DPI.
+  - Overflow detection is based on `scrollHeight` vs. max.
+  - Visually intuitive and relatively straightforward, but:
+    - Sensitive to font choices and layout changes.
+    - Does not fully simulate a typesetting engine (like Word/LaTeX), but is good enough for web UI.
+
+- **Shared header/footer model**
+  - Every page stores `header` and `footer`, but editing applies to all pages.
+  - This makes it easy to add per‑page customization in the future if needed.
+
+- **Vite + Tailwind choice**
+  - Vite:
+    - Provides a fast, modern dev experience with minimal config.
+  - Tailwind:
+    - Encourages consistent design via utility classes.
+    - Reduces context‑switching between JSX and CSS files.
+
+---
