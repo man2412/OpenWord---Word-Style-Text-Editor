@@ -1,0 +1,93 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+body {
+  margin: 0;
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Oxygen',
+    'Ubuntu', 'Cantarell', 'Fira Sans', 'Droid Sans', 'Helvetica Neue',
+    sans-serif;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+/* Custom styling for react-colorful color picker */
+.react-colorful {
+  width: 200px !important;
+  height: 150px !important;
+}
+
+.react-colorful__saturation {
+  border-radius: 8px 8px 0 0;
+}
+
+.react-colorful__hue {
+  border-radius: 0 0 8px 8px;
+  height: 20px;
+}
+
+.react-colorful__pointer {
+  width: 20px;
+  height: 20px;
+  border-width: 3px;
+}
+
+/* Editor content styling - ensure fonts apply properly */
+[contenteditable] {
+  font-family: Arial, sans-serif;
+}
+
+/* Page shadows and spacing for Google Docs style */
+.page-container {
+  box-shadow: 0 0 5px rgba(0, 0, 0, 0.1);
+  transition: box-shadow 0.2s;
+}
+
+.page-container:hover {
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
+}
+
+/* List styling for better appearance */
+[contenteditable] ul,
+[contenteditable] ol {
+  margin: 0.5em 0;
+  padding-left: 2em;
+}
+
+[contenteditable] ul {
+  list-style-type: disc;
+}
+
+[contenteditable] ol {
+  list-style-type: decimal;
+}
+
+[contenteditable] li {
+  margin: 0.25em 0;
+  padding-left: 0.25em;
+}
+
+/* Nested lists */
+[contenteditable] ul ul,
+[contenteditable] ol ul {
+  list-style-type: circle;
+  }
+
+[contenteditable] ul ul ul,
+[contenteditable] ol ul ul,
+[contenteditable] ol ol ul {
+  list-style-type: square;
+  }
+
+[contenteditable] ol ol {
+  list-style-type: lower-alpha;
+}
+
+[contenteditable] ol ol ol {
+  list-style-type: lower-roman;
+  }
+
