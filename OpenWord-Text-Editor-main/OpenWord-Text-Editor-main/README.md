@@ -103,46 +103,81 @@ All features are implemented and tested. The codebase demonstrates:
 
 ### 8. Architectural Choices & Rationale
 
-- **Single main component (`OpenWord`)**
-  - Keeps everything in one place for a small codebase.
-  - Easy to reason about flow from top to bottom.
-  - Trade‑off: `App.jsx` is large (~1200 lines) and could be split into smaller components (Toolbar, Page, HeaderFooterEditor, etc.) for long‑term maintainability.
+8. Architectural Choices & Rationale
+1️⃣ Single main component (OpenWord)
 
-- **Use of `contentEditable` + `document.execCommand`**
-  - **Pros**:
-    - Fast way to get a full rich‑text editor.
-    - Browser handles caret movement, selection, and many edge cases.
-    - Less code than building a full editor from scratch.
-  - **Cons**:
-    - `execCommand` is officially deprecated (but widely supported).
-    - Generated HTML can be messy and vary across browsers.
-    - Harder to enforce a strict, structured document model.
+Reason: Keeps everything in one place for a small codebase.
 
-- **DOM‑driven editing with periodic React sync**
-  - The DOM’s `innerHTML` is treated as the source of truth during typing.
-  - React state (`pages`) is periodically updated from the DOM.
-  - **Pros**:
-    - Better performance for a word processor (avoids state updates on each keystroke).
-  - **Cons**:
-    - Two sources of truth to keep in sync (DOM and React state).
-    - Requires careful DOM traversal and sync logic (`splitOverflow`, `updatePages`).
+Pros: Easy to follow top-to-bottom flow.
 
-- **Auto‑pagination by measuring height**
-  - Uses `PAGE_WIDTH`, `PAGE_HEIGHT`, and `CONTENT_MAX_HEIGHT` to simulate A4 pages at 96 DPI.
-  - Overflow detection is based on `scrollHeight` vs. max.
-  - Visually intuitive and relatively straightforward, but:
-    - Sensitive to font choices and layout changes.
-    - Does not fully simulate a typesetting engine (like Word/LaTeX), but is good enough for web UI.
+Cons: Large file (~1200 lines); could be split into smaller components (Toolbar, Page, HeaderFooterEditor) for maintainability.
 
-- **Shared header/footer model**
-  - Every page stores `header` and `footer`, but editing applies to all pages.
-  - This makes it easy to add per‑page customization in the future if needed.
+2️⃣ Use of contentEditable + document.execCommand
 
-- **Vite + Tailwind choice**
-  - Vite:
-    - Provides a fast, modern dev experience with minimal config.
-  - Tailwind:
-    - Encourages consistent design via utility classes.
-    - Reduces context‑switching between JSX and CSS files.
+Pros:
 
----
+Quick way to get a full rich-text editor.
+
+Browser handles caret movement, selection, and edge cases.
+
+Less code than building an editor from scratch.
+
+Cons:
+
+execCommand is deprecated (but still widely supported).
+
+Generated HTML can be messy and inconsistent across browsers.
+
+Hard to enforce a structured document model.
+
+3️⃣ DOM-driven editing with periodic React sync
+
+How it works: DOM’s innerHTML is the main source of truth while typing; React state (pages) is synced periodically.
+
+Pros: Better performance (avoids state updates on every keystroke).
+
+Cons: Two sources of truth to keep in sync; requires careful DOM traversal (updatePages, splitOverflow).
+
+4️⃣ Auto-pagination by measuring height
+
+How it works: Uses PAGE_WIDTH, PAGE_HEIGHT, CONTENT_MAX_HEIGHT; overflow detected via scrollHeight.
+
+Pros: Visually intuitive, simple to implement.
+
+Cons: Sensitive to fonts/layout; not a full typesetting engine (like Word/LaTeX).
+
+5️⃣ Shared header/footer model
+
+How it works: Each page stores header/footer, but edits apply to all pages.
+
+Pros: Easy to implement; flexible for future per-page customization.
+
+Cons: Limited per-page customization in current version.
+
+6️⃣ Vite + Tailwind
+
+Vite Pros: Fast dev experience, minimal config.
+
+Tailwind Pros: Consistent styling, reduces switching between JSX and CSS.
+
+7️⃣ LocalStorage for saving documents
+
+How it works: Saves pages and formatting to localStorage for persistence.
+
+Pros:
+
+Quick and easy storage for small documents.
+
+No backend needed; works offline.
+
+Automatic restore on app reload.
+
+Cons:
+
+Limited storage (~5–10MB).
+
+Only accessible in the same browser/device.
+
+Not suitable for collaborative editing or large files.
+
+Risk of data loss if browser clears storage.
