@@ -523,19 +523,61 @@ export default function OpenWord() {
   };
 
   // BUTTON / SHORTCUT: Page Break (Ctrl+Enter)
-  // Simple + stable behavior:
-  // - Creates a new EMPTY page after the current one.
-  // - Does NOT try to split/move existing content at the caret.
-  //   (Auto-flow still handles overflow between pages.)
+  // Splits content at cursor position:
+  // - Content before cursor stays on current page
+  // - Content after cursor moves to new page
   const insertPageBreak = (targetIndex = currentPage) => {
+    let contentAfterBreak = "";
+    let contentBeforeBreak = null;
+
+    // Try to split content if we have a valid selection
+    const selection = window.getSelection();
+    if (selection && selection.rangeCount > 0) {
+      const range = selection.getRangeAt(0);
+      const editor = pageRefs.current[targetIndex];
+
+      // Check if selection is actually inside the target editor
+      if (editor && editor.contains(range.commonAncestorContainer)) {
+        try {
+          // Create a range from cursor to end of this editor
+          const splitRange = document.createRange();
+          splitRange.setStart(range.endContainer, range.endOffset);
+          splitRange.setEndAfter(editor.lastChild || editor);
+
+          // Extract contents (removes from DOM)
+          const fragment = splitRange.extractContents();
+
+          // Convert fragment to HTML string
+          const tempDiv = document.createElement("div");
+          tempDiv.appendChild(fragment);
+          contentAfterBreak = tempDiv.innerHTML;
+
+          // Get the remaining content for the current page
+          contentBeforeBreak = editor.innerHTML;
+        } catch (e) {
+          console.error("Failed to split content:", e);
+        }
+      }
+    }
+
     setPages((prev) => {
       const newPages = [...prev];
+
+      // Update current page if we successfully split
+      if (contentBeforeBreak !== null) {
+        newPages[targetIndex] = {
+          ...newPages[targetIndex],
+          content: contentBeforeBreak,
+        };
+      }
+
       const newPage = {
         id: prev.length + 1,
-        content: "",
+        content: contentAfterBreak,
         header: prev[0]?.header || "",
         footer: prev[0]?.footer || "",
       };
+
       newPages.splice(targetIndex + 1, 0, newPage);
       return newPages.map((p, i) => ({ ...p, id: i + 1 }));
     });
