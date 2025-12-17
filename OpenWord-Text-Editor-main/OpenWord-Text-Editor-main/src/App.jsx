@@ -126,6 +126,35 @@ export default function OpenWord() {
   const fontPickerRef = useRef(null); // For detecting clicks outside font picker
   const lastSelectionRange = useRef(null); // Remember last caret/selection inside editor
 
+  // Helper: remove empty trailing pages (no body content),
+  // always keeping at least the first page.
+  const trimEmptyTrailingPages = useCallback((pagesArray) => {
+    if (!pagesArray || pagesArray.length === 0) return [{ id: 1, content: "", header: "", footer: "" }];
+
+    let end = pagesArray.length - 1;
+    while (end > 0) {
+      const p = pagesArray[end];
+      // Consider a page "empty" if its body content has no visible text
+      const raw = p.content || "";
+      const cleaned = raw
+        .replace(/&nbsp;/gi, "")
+        .replace(/<br\s*\/?>/gi, "")
+        .replace(/<[^>]*>/g, "")
+        .trim();
+      const isEmpty = cleaned.length === 0;
+      if (!isEmpty) break;
+      end -= 1;
+    }
+
+    const trimmed = pagesArray.slice(0, end + 1).map((p, i) => ({
+      ...p,
+      id: i + 1,
+    }));
+    return trimmed.length > 0
+      ? trimmed
+      : [{ id: 1, content: "", header: "", footer: "" }];
+  }, []);
+
   // Track what content was last loaded to avoid reloading while typing
   const lastLoadedPage = useRef(-1);
   const lastLoadedMode = useRef(null);
@@ -135,22 +164,22 @@ export default function OpenWord() {
       try {
         const data = JSON.parse(saved);
         // Restore pages array, or default to single empty page if corrupted
-        setPages(
-          data.pages || [{ id: 1, content: "", header: "", footer: "" }]
-        );
+        const restored =
+          data.pages || [{ id: 1, content: "", header: "", footer: "" }];
+        setPages(trimEmptyTrailingPages(restored));
       } catch (e) {
         console.error("Failed to load document");
       }
     }
-  }, []); // Empty dependency array = run once on mount
+  }, [trimEmptyTrailingPages]); // Run once on mount (trim empty pages on load)
 
   const saveDocument = useCallback(() => {
     const docData = {
-      pages, // All pages with content, headers, footers
+      pages: trimEmptyTrailingPages(pages), // All pages with content, headers, footers (trim empty tails)
       lastModified: new Date().toISOString(), // Timestamp for tracking
     };
     localStorage.setItem("openword_doc", JSON.stringify(docData));
-  }, [pages]);
+  }, [pages, trimEmptyTrailingPages]);
 
   useEffect(() => {
     const timer = setTimeout(saveDocument, 1000);
@@ -603,7 +632,7 @@ export default function OpenWord() {
       : pageRefs.current[effectiveIndex];
     if (!editor) return;
 
-    const newPages = [...pages];
+    let newPages = [...pages];
     // Check which mode we're in and save to appropriate field
     if (headerFooterMode === 'header') {
       // Update header on ALL pages (shared header)
@@ -621,6 +650,7 @@ export default function OpenWord() {
       // Normal mode: save to specific page content
       newPages[effectiveIndex].content = editor.innerHTML;
     }
+    newPages = trimEmptyTrailingPages(newPages);
     setPages(newPages); // Triggers auto-save via useEffect
 
     // After updating content, check for overflow and split to next pages as needed
@@ -694,8 +724,8 @@ export default function OpenWord() {
 
     // Sync pages state from DOM after moving
     if (moved) {
-      setPages((prev) =>
-        prev.map((p, idx) => {
+      setPages((prev) => {
+        const updated = prev.map((p, idx) => {
           const ed = pageRefs.current[idx];
           return {
             ...p,
@@ -704,8 +734,9 @@ export default function OpenWord() {
             footer: prev[0]?.footer || "",
             id: idx + 1,
           };
-        })
-      );
+        });
+        return trimEmptyTrailingPages(updated);
+      });
     }
 
     // If next page also overflows, continue splitting downwards
@@ -730,21 +761,7 @@ export default function OpenWord() {
   // BUTTON: Export (FileDown icon)
   // Saves document to user's computer as a JSON file
   // Can be used for backups or transferring to another browser/backend
-  const exportDocument = () => {
-    const docData = {
-      pages, // All pages with content
-      exportedAt: new Date().toISOString(), // Timestamp of export
-    };
-    // Create JSON blob and trigger browser download
-    const blob = new Blob([JSON.stringify(docData, null, 2)], {
-      type: "application/json",
-    });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement("a");
-    a.href = url;
-    a.download = "document.json"; // Default filename
-    a.click(); // Programmatically trigger download
-  };
+  // (Export button removed as per requirements)
 
   // BUTTON: Import (FileUp icon)
   // Loads a previously exported JSON document
@@ -834,16 +851,8 @@ export default function OpenWord() {
           ======================================================================== */}
       <div className="bg-white border-b border-gray-300 p-3 sticky top-0 z-10 shadow-sm">
         <div className="flex flex-wrap gap-2 items-center">
-          {/* File Operations: Export, Reset */}
+          {/* File Operations: Reset */}
           <div className="flex gap-1 border-r pr-2">
-            {/* Export button - Downloads document as JSON */}
-            <button
-              onClick={exportDocument}
-              className="p-2 hover:bg-gray-100 rounded"
-              title="Export"
-            >
-              <FileDown size={18} />
-            </button>
             {/* Reset button - Clears entire document */}
             <button
               onClick={resetDocument}
