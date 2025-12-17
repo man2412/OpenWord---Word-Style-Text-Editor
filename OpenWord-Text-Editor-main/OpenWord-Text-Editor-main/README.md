@@ -103,7 +103,6 @@ All features are implemented and tested. The codebase demonstrates:
 
 ### 8. Architectural Choices & Rationale
 
-8. Architectural Choices & Rationale
 1️⃣ Single main component (OpenWord)
 
 Reason: Keeps everything in one place for a small codebase.
